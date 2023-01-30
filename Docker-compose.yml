@@ -1,0 +1,79 @@
+services:
+  mysql-user-service:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    container_name: mysql-container
+    networks:
+      - user-net
+    environment:
+      MYSQL_ROOT_PASSWORD: root@123
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root@123
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+  user-authentication-service:
+    container_name: user-authentication-service
+    build: UserAuthentication/
+    networks:
+      - user-net
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql-user-service
+    restart: always
+
+  mongo-foodie-service:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    container_name: mongo-container
+    networks:
+      - user-net
+
+  foodie-service:
+    container_name: foodie-service
+    build: FoodieApp/
+    networks:
+      - user-net
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mongo-foodie-service
+    restart: always
+
+  notification-service:
+    container_name: notification-service
+    build: Notification/
+    networks:
+      - user-net
+    ports:
+      - "8099:8099"
+    depends_on:
+      - mongo-foodie-service
+    restart: always
+
+  eureka-service:
+    container_name: eureka-service
+    build: EurekaServer/
+    networks:
+      - user-net
+    ports:
+      - "8761:8761"
+    restart: always
+
+  api-gateway-service:
+    container_name: api-gateway-service
+    build: Api-Gateway-App/
+    networks:
+      - user-net
+    ports:
+      - "9090:9090"
+    depends_on:
+      - foodie-service
+      - user-authentication-service
+    restart: always
+
+networks:
+  user-net:
+    driver: bridge
